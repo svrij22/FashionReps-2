@@ -17,11 +17,13 @@ public class SellerService {
     SellerRepository sellerRepository;
     CrawlerService crawlerService;
     FashionItemService fashionItemService;
+    FetchInjector fetchInjector;
 
-    public SellerService(SellerRepository sellerRepository, CrawlerService crawlerService, FashionItemService fashionItemService) {
+    public SellerService(SellerRepository sellerRepository, CrawlerService crawlerService, FashionItemService fashionItemService, FetchInjector fetchInjector) {
         this.sellerRepository = sellerRepository;
         this.crawlerService = crawlerService;
         this.fashionItemService = fashionItemService;
+        this.fetchInjector = fetchInjector;
     }
 
     public List<Seller> getAll(){
@@ -60,7 +62,8 @@ public class SellerService {
 
     public void updateOldestSeller(){
         Seller lastUpdated = getLastUpdatedSeller();
-        crawlerService.crawl(lastUpdated.id);
+        //crawlerService.crawl(lastUpdated.id);
+        fetchInjector.fetch(lastUpdated.id);
         updateSingleSeller(lastUpdated.id);
     }
 

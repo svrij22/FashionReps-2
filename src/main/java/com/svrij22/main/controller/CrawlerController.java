@@ -1,5 +1,6 @@
 package com.svrij22.main.controller;
 import com.svrij22.main.service.CrawlerService;
+import com.svrij22.main.service.FetchInjector;
 import com.svrij22.main.service.SellerService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;

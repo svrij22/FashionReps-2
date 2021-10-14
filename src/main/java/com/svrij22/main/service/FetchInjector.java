@@ -12,28 +12,24 @@ import net.lightbody.bmp.proxy.CaptureType;
 import org.openqa.selenium.*;
 import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
-import org.openqa.selenium.logging.LogType;
-import org.openqa.selenium.logging.LoggingPreferences;
 import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.springframework.stereotype.Service;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
-import java.util.logging.Level;
 
 @Service
-public class CrawlerService {
+public class FetchInjector {
 
     public FashionItemService fashionItemService;
     public static boolean isBusy;
 
-    public CrawlerService(FashionItemService fashionItemService) {
+    public FetchInjector(FashionItemService fashionItemService) {
         this.fashionItemService = fashionItemService;
     }
 
-    public String crawl(String sellerid){
+    public String fetch(String sellerid){
 
         //
         isBusy = true;
@@ -51,44 +47,34 @@ public class CrawlerService {
         ChromeOptions options = new ChromeOptions();
         options.setProxy(selProxy);
         options.addArguments("--no-sandbox");
+        options.addArguments("--headless");
         System.setProperty("webdriver.chrome.args", "--disable-logging");
         System.setProperty("webdriver.chrome.silentOutput", "true");
         options.setAcceptInsecureCerts(true);
         options.addArguments("--disable-dev-shm-usage");
-        options.addArguments("disable-infobars"); // disabling infobars
         options.addArguments("--disable-extensions"); // disabling extensions
+        options.addArguments("disable-infobars"); // disabling infobars
         options.addArguments("window-size=600,600"); // Bypass OS security
-
-        /*Disable images*/
-        //HashMap<String, Object> images = new HashMap<>();
-        //images.put("images", 2);
-        //HashMap<String, Object> prefs = new HashMap<>();
-        //prefs.put("profile.default_content_setting_values", images);
-        //options.setExperimentalOption("prefs", prefs);
 
         /*Webdriver*/
         WebDriverManager.chromedriver().setup();
         System.setProperty("webdriver.chrome.whitelistedIps", "");
         WebDriver driver = new ChromeDriver(options);
-        driver.manage().window().setSize(new Dimension(600, 600));
         driver.get("https://weidian.com/?userid=" + sellerid);
 
         /*Debug*/
-        int attempts = 0;
         int prevAmount = 0;
-        while (attempts < 200){
+        int attempts = 0;
+        int offset = 0;
+
+        while (attempts < 25){
             try{
                 JavascriptExecutor js = (JavascriptExecutor) driver;
-                js.executeScript("window.scrollBy(0,10000)", "");
-
-                //If amount of items got is under 100, click the buttons
-                if (prevAmount < 500){
-                    Setup(driver); //Clicks buttons
-                    //ClickMoreButtons(driver); //Clicks buttons
-                }
+                js.executeScript(FetchInjection(sellerid, offset, 100), "");
+                offset += 100;
 
                 //Sleep
-                Thread.sleep(10);
+                Thread.sleep(200);
 
                 //Get logs
                 HarLog harlog = proxy.getHar().getLog();
@@ -104,22 +90,17 @@ public class CrawlerService {
                     attempts = 0;
                 }
                 attempts += 1;
+
             }catch (Exception exception) {
                 exception.printStackTrace();
             }
         }
 
+        //Stop
         proxy.stop();
         driver.close();
 
-        /*Parse*/
-        List<HarEntry> allEntries = proxy.getHar().getLog().getEntries();
-        allEntries.forEach(harEntry -> {
-            if (harEntry.getRequest().getUrl().contains("getItemList")){
-                System.out.printf("Parsing ... " + allEntries.indexOf(harEntry) + " of " + allEntries.size());
-                parseItems(harEntry.getResponse().getContent().getText(), sellerid);
-            }
-        });
+        parseItems(proxy.getHar().getLog());
 
         System.out.println("Done");
         isBusy = false;
@@ -127,10 +108,31 @@ public class CrawlerService {
         return "test";
     }
 
+    public String FetchInjection(String sellerid, int offset, int limit){
+        return "fetch(\"https://thor.weidian.com/decorate/shopDetail.tab.getItemList/1.0?param=%7B%22shopId%22:%22" + sellerid + "%22,%22tabId%22:0,%22sortOrder%22:%22desc%22,%22offset%22:"+offset+",%22limit%22:"+limit+"%7D\", {\n" +
+                "  \"referrer\": \"https://weidian.com/\",\n" +
+                "  \"referrerPolicy\": \"strict-origin-when-cross-origin\",\n" +
+                "  \"body\": null,\n" +
+                "  \"method\": \"GET\",\n" +
+                "  \"mode\": \"cors\",\n" +
+                "  \"credentials\": \"include\"\n" +
+                "});";
+    }
+
     public void parseItems(String jsonText, String sellerid){
+
+        List<HarEntry> allEntries = proxy.getHar().getLog().getEntries();
+
+        allEntries.forEach(harEntry -> {
+            if (harEntry.getRequest().getUrl().contains("getItemList")){
+                System.out.printf("Parsing ... " + allEntries.indexOf(harEntry) + " of " + allEntries.size());
+                parseItems(harEntry.getResponse().getContent().getText(), sellerid);
+            }
+        });
+
         try{
             Gson gson = new Gson();
-            JsonText jsonObject = gson.fromJson(jsonText, JsonText.class);
+            com.svrij22.main.service.CrawlerService.JsonText jsonObject = gson.fromJson(jsonText, com.svrij22.main.service.CrawlerService.JsonText.class);
             System.out.println("%nParsed");
             jsonObject.result.itemList.forEach(fashionItem -> fashionItem.seller = sellerid);
             fashionItemService.saveAll(jsonObject.result.itemList);
@@ -139,62 +141,6 @@ public class CrawlerService {
         }catch (Exception e) {
             System.out.println("Could not parse json file");
         }
-    }
-
-    public boolean isBusy() {
-        return isBusy;
-    }
-
-    public class JsonText{
-        public Result result;
-    }
-
-    public class Result{
-        public List<FashionItem> itemList;
-    }
-
-    public void Setup(WebDriver driver){
-
-        try{
-            //Click exit
-            driver.findElement(By.className("e-active-newuser-coupon-close")).click();
-        }catch (Exception e){  System.out.println("Exit button - Exception"); }
-
-        //Click All Tab
-        List<WebElement> webElements = driver.findElements(By.className("j-tab-item"));
-        webElements.forEach(w -> {
-            if (w.getText().contains("全部")) {
-                try {
-                    scrollToElement(w, driver);
-                    w.click();
-                } catch (Exception exception) {
-                    exception.printStackTrace();
-                }
-            }
-        });
-    }
-
-    public void ClickMoreButtons(WebDriver driver){
-        /*List<WebElement> elements = driver.findElements(By.xpath("//img[@data-event='loadMore']"));
-        if (elements.size() < 1) return;
-        WebElement webElement = getRandomElement(elements);
-        try {
-            scrollToElement(webElement, driver);
-            webElement.click();
-            Thread.sleep(80);
-        } catch (Exception e) {
-            System.out.println("More button - Exception");
-        }*/
-    }
-    public WebElement getRandomElement(List<WebElement> list)
-    {
-        Random rand = new Random();
-        return list.get(rand.nextInt(list.size()));
-    }
-
-    private void scrollToElement(WebElement webElement, WebDriver webDriver) throws Exception {
-        ((JavascriptExecutor)webDriver).executeScript("arguments[0].scrollIntoViewIfNeeded()", webElement);
-        Thread.sleep(500);
     }
 
     public int CountAmountOfItems(HarLog harlog){

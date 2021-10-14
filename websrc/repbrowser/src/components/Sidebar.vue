@@ -59,7 +59,8 @@ export default {
       data: {},
       isCollapsed: false,
       isUpdating: false,
-      sellerSearch: ""
+      sellerSearch: "",
+      root: "http://localhost:8075"
     }
   },
   computed: {
@@ -72,7 +73,7 @@ export default {
   },
   methods: {
     addSeller(){
-      fetch("http://localhost:8070/sellers/add?" + new URLSearchParams({
+      fetch(this.root + "/sellers/add?" + new URLSearchParams({
         name: this.newSeller.name,
         id: this.newSeller.id
       }))
@@ -80,12 +81,12 @@ export default {
           .then(data => this.data = data);
     },
     getSellers(){
-      fetch("http://localhost:8070/sellers")
+      fetch(this.root + "/sellers")
           .then(response => response.json())
           .then(data => this.data = data);
     },
     removeSeller(id){
-      fetch("http://localhost:8070/sellers/remove?" + new URLSearchParams({
+      fetch(this.root + "/sellers/remove?" + new URLSearchParams({
         id: id
       }))
           .then(response => response.json())
@@ -93,7 +94,7 @@ export default {
     },
     runUpdate(){
       this.isUpdating = true;
-      fetch("http://localhost:8070/sellers/update")
+      fetch(this.root + "/sellers/update")
           .then(response => response.json())
           .then(data => {
             this.data = data;
@@ -103,7 +104,7 @@ export default {
     },
     updateSeller(sellerid){
       this.isUpdating = true;
-      fetch("http://localhost:8070/crawler/update?sellerid=" + sellerid)
+      fetch(this.root + "/crawler/update?sellerid=" + sellerid)
           .then(response => response.json())
           .then(data => {
             this.data = data;
@@ -113,7 +114,7 @@ export default {
     },
     updateSellerInfo(sellerid){
       this.isUpdating = true;
-      fetch("http://localhost:8070/crawler/info?sellerid=" + sellerid)
+      fetch(this.root + "/crawler/info?sellerid=" + sellerid)
           .then(response => response.json())
           .then(data => {
             this.data = data;
@@ -122,7 +123,7 @@ export default {
           });
     },
     runTranslate(){
-      fetch("http://localhost:8070/items/translate")
+      fetch(this.root + "/items/translate")
     }
   },
   mounted() {
