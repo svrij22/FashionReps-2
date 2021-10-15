@@ -1,4 +1,4 @@
-# repbrowser
+# repbrow
 
 ## Project setup
 ```

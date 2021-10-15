@@ -1,5 +1,5 @@
 <template>
-  <div v-show="!isCollapsed" class="root ">
+  <div v-show="!isCollapsed" class="root card">
     <div class="d-flex flex-column flex-shrink-0 p-3 bg-light sidebar">
       <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-dark text-decoration-none">
         <span class="fs-8 seller-list-span">Seller list</span>
@@ -20,7 +20,7 @@
                   <span class="btn-sm btn-u" @click="() => updateSeller(seller.id)" v-if="false">[update]</span>
                   <span class="btn-sm btn-u" @click="() => updateSellerInfo(seller.id)" v-if="false">[info-u]</span>
                 </div>
-                <div class="s-id"> {{seller.id}} - {{seller.lastUpdated?.split("T")[0]}} <span @click="() => removeSeller(seller.id)">[x]</span></div>
+                <div class="s-id"> {{seller.id}} - {{lastUpdatedDate(seller)}} </div>
                 <div class="items-amt">{{seller.itemsAmount}} Items</div>
               </div>
             </li>
@@ -72,6 +72,9 @@ export default {
     }
   },
   methods: {
+    lastUpdatedDate(seller){
+      return seller.lastUpdated?.split("T")[0]
+    },
     addSeller(){
       fetch(this.root + "/sellers/add?" + new URLSearchParams({
         name: this.newSeller.name,
@@ -148,7 +151,8 @@ export default {
     width: 230px;
     height: 2000px;
     margin-top: 90px;
-    border: 4px solid gray;
+
+    box-shadow: 0 0.25rem 0.25rem rgb(0 0 0 / 25%), inset 0 -1px 5px rgb(0 0 0 / 25%);
   }
 
   .nav-item{

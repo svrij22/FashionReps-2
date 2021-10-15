@@ -34,10 +34,4 @@ public class SellerController {
     public List<Seller> addSeller(@RequestParam String id) {
         return sellerService.removeSeller(id);
     }
-
-    @GetMapping("/update")
-    public List<Seller> updateSeller() {
-        sellerService.updateOldestSeller();
-        return sellerService.getAll();
-    }
 }

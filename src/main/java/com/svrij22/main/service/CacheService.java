@@ -16,12 +16,13 @@ public class CacheService {
 
     List<CachedItems> cachedItems = new ArrayList<>();
 
-    public void cacheItems(int amountOfItems, String cacheKey, List<FashionItem> items){
+    public void cacheItems(int amountOfItems, String cacheKey, List<FashionItem> items, int matchedItems){
         System.out.println("Cached " + cacheKey);
 
         CachedItems cachedItem = new CachedItems(cacheKey,
                 amountOfItems,
-                items.stream().map(item -> item.position).collect(Collectors.toList()));
+                items.stream().map(item -> item.position).collect(Collectors.toList()),
+                matchedItems);
 
         cachedItems.add(cachedItem);
 
@@ -36,6 +37,16 @@ public class CacheService {
                 .get();
 
         return cItem.fashionItemList.stream().map(fashionItemsInMemory::get).collect(Collectors.toList());
+    }
+
+    public int getAmountOfMatchedItemsForCache(String cacheName) {
+        CachedItems cItem = cachedItems
+                .stream()
+                .filter(c -> c.key.equals(cacheName))
+                .findFirst()
+                .get();
+
+        return cItem.matchedItems;
     }
 
     public boolean hasCache(String key) {

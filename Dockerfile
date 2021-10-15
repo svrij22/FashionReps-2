@@ -1,5 +1,5 @@
 # ubuntu-openjdk-8-jdk
-FROM dorowu/ubuntu-desktop-lxde-vnc
+FROM ubuntu:bionic
 MAINTAINER Sep Vrij <svrij22@test.com>
 
 # This is in accordance to : https://www.digitalocean.com/community/tutorials/how-to-install-java-with-apt-get-on-ubuntu-16-04
@@ -40,9 +40,9 @@ ARG CHROMDRIVER_VERSION=83.0.4103.39
 ARG FIREFOXDRIVER_VERSION=0.26.0
 
 #Step 2: Install Chrome
-#RUN curl http://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_$CHROME_VERSION-1_amd64.deb -o /chrome.deb
-#RUN apt-get install -y /chrome.deb
-#RUN rm /chrome.deb
+RUN curl http://dl.google.com/linux/chrome/deb/pool/main/g/google-chrome-stable/google-chrome-stable_$CHROME_VERSION-1_amd64.deb -o /chrome.deb
+RUN apt-get install -y /chrome.deb
+RUN rm /chrome.deb
 #May cause mismatch? Check when done what version it is
 #Step 3: Install chromedriver for Selenium
 RUN mkdir -p /app/bin
@@ -57,10 +57,10 @@ RUN chmod +x /app/bin/chromedriver
 #  && mv ./firefox /opt/firefox-$FIREFOX_VERSION \
 #  && ln -s /opt/firefox-$FIREFOX_VERSION/firefox /usr/bin/firefox
 #Step 5: Install Geckodriver
-RUN wget https://github.com/mozilla/geckodriver/releases/download/v$FIREFOXDRIVER_VERSION/geckodriver-v$FIREFOXDRIVER_VERSION-linux64.tar.gz \
-    && tar -xf geckodriver-v0.26.0-linux64.tar.gz \
-    && cp geckodriver /app/bin/geckodriver
-RUN chmod +x /app/bin/geckodriver
+#RUN wget https://github.com/mozilla/geckodriver/releases/download/v$FIREFOXDRIVER_VERSION/geckodriver-v$FIREFOXDRIVER_VERSION-linux64.tar.gz \
+#    && tar -xf geckodriver-v0.26.0-linux64.tar.gz \
+#    && cp geckodriver /app/bin/geckodriver
+#RUN chmod +x /app/bin/geckodriver
 #Step 6: Install Maven
 # 1- Define Maven version
 ARG MAVEN_VERSION=3.6.3
@@ -100,3 +100,4 @@ WORKDIR /app
 
 #Clean install
 RUN mvn clean install
+ENTRYPOINT ["./entrypoint.sh"]

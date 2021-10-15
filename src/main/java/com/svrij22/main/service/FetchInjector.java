@@ -16,6 +16,7 @@ import org.openqa.selenium.remote.CapabilityType;
 import org.openqa.selenium.remote.DesiredCapabilities;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
@@ -100,7 +101,7 @@ public class FetchInjector {
         proxy.stop();
         driver.close();
 
-        parseItems(proxy.getHar().getLog());
+        parseItems(proxy.getHar().getLog(), sellerid);
 
         System.out.println("Done");
         isBusy = false;
@@ -119,29 +120,45 @@ public class FetchInjector {
                 "});";
     }
 
-    public void parseItems(String jsonText, String sellerid){
+    public void parseItems(HarLog harLog, String sellerid){
 
-        List<HarEntry> allEntries = proxy.getHar().getLog().getEntries();
+        List<HarEntry> allEntries = harLog.getEntries();
 
+        System.out.println("Parsing all items");
         allEntries.forEach(harEntry -> {
             if (harEntry.getRequest().getUrl().contains("getItemList")){
+
                 System.out.printf("Parsing ... " + allEntries.indexOf(harEntry) + " of " + allEntries.size());
-                parseItems(harEntry.getResponse().getContent().getText(), sellerid);
+
+                try{
+                    String jsonText = harEntry.getResponse().getContent().getText();
+
+                    Gson gson = new Gson();
+                    JsonText jsonObject = gson.fromJson(jsonText, JsonText.class);
+
+                    System.out.println("Parsed");
+
+                    jsonObject.result.itemList.forEach(fashionItem -> fashionItem.seller = sellerid);
+
+                    System.out.println("Flushing");
+                    fashionItemService.saveAll(jsonObject.result.itemList);
+                    System.out.printf("Flushed %s items%n", jsonObject.result.itemList.size());
+
+                }catch (Exception e) {
+                    System.out.println("Could not parse json file");
+                }
             }
         });
-
-        try{
-            Gson gson = new Gson();
-            com.svrij22.main.service.CrawlerService.JsonText jsonObject = gson.fromJson(jsonText, com.svrij22.main.service.CrawlerService.JsonText.class);
-            System.out.println("%nParsed");
-            jsonObject.result.itemList.forEach(fashionItem -> fashionItem.seller = sellerid);
-            fashionItemService.saveAll(jsonObject.result.itemList);
-            System.out.println("Flushed");
-            System.out.printf(". Saved all Fashion Items (%s)%n", jsonObject.result.itemList.size());
-        }catch (Exception e) {
-            System.out.println("Could not parse json file");
-        }
     }
+
+    public class JsonText{
+        public Result result;
+    }
+
+    public class Result{
+        public List<FashionItem> itemList;
+    }
+
 
     public int CountAmountOfItems(HarLog harlog){
         int amountOfItems = 0;

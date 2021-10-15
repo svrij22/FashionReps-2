@@ -1,6 +1,7 @@
 package com.svrij22.main.controller;
 
 import com.svrij22.main.domain.FashionItem;
+import com.svrij22.main.dto.SearchResult;
 import com.svrij22.main.service.FashionItemService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,13 +21,13 @@ public class FashionItemController {
     }
 
     @GetMapping
-    public List<FashionItem> getItems(){
-       return itemService.getAllSorted();
+    public SearchResult getItems(){
+       return doSearch("", 0);
     }
 
     @GetMapping("/search")
-    public List<FashionItem> doSearch(@RequestParam String param) {
-        return itemService.doSearch(param, 100);
+    public SearchResult doSearch(@RequestParam String param, @RequestParam int page) {
+        return itemService.doSearch(param, page);
     }
 
     @GetMapping("/translate")

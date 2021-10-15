@@ -1,16 +1,11 @@
 package com.svrij22.main.service;
 import com.svrij22.main.data.FashionItemRepository;
 import com.svrij22.main.domain.FashionItem;
-import com.svrij22.main.domain.Seller;
-import org.springframework.boot.context.event.ApplicationReadyEvent;
-import org.springframework.context.annotation.DependsOn;
-import org.springframework.context.event.EventListener;
+import com.svrij22.main.dto.SearchResult;
 import org.springframework.stereotype.Service;
 
-import javax.annotation.PostConstruct;
 import java.io.*;
 import java.net.HttpURLConnection;
-import java.net.ProtocolException;
 import java.net.URL;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -35,7 +30,7 @@ public class FashionItemService {
 
     public List<FashionItem> getAll() {
         if (amountOfItems == 0){
-            fashionItemsInMemory =  itemRepository.findAll();
+            fashionItemsInMemory = itemRepository.findAll();
 
             //Set each position
             for(var pos = 0; pos < fashionItemsInMemory.size(); pos ++){
@@ -47,60 +42,91 @@ public class FashionItemService {
         return fashionItemsInMemory;
     }
 
-    public List<FashionItem> getAllSorted() {
+    public SearchResult getAllSorted(int page) {
+
+        String cacheName = "@@@all.page" + page;
+
         //Has cache?
-        if (cacheService.hasCache("@@@all"))
-            return cacheService.getCache("@@@all", fashionItemsInMemory);
+        if (cacheService.hasCache("@@@all")){
+            return getSearchResultForCache("@@@all", page);
+        }
 
         //Find all and sort
         List<FashionItem> allItemsOrdered = getAll()
                 .stream()
+                .filter(fashionItem -> Double.parseDouble(fashionItem.price) > 2) //Price filter
                 .sorted(Comparator.comparingInt(FashionItem::getSold))
                 .collect(Collectors.toList());
-        Collections.reverse(allItemsOrdered);
-        allItemsOrdered = allItemsOrdered.stream().limit(500).collect(Collectors.toList());
 
-        cacheService.cacheItems(amountOfItems, "@@@all", allItemsOrdered);
+        /*Get amount of matched items*/
+        int matchedItems = allItemsOrdered.size();
+
+        /*Reverse*/
+        Collections.reverse(allItemsOrdered);
+
+        /*Order*/
+        allItemsOrdered = allItemsOrdered.stream().skip(500L * page).limit(500).collect(Collectors.toList());
+
+        /*Cache*/
+        cacheService.cacheItems(amountOfItems, cacheName, allItemsOrdered, matchedItems);
 
         //Return
-        return allItemsOrdered;
+        return new SearchResult(allItemsOrdered, page, amountOfItems);
+    }
+
+    public SearchResult getSearchResultForCache(String param, int page){
+        List<FashionItem> fashionItems = cacheService.getCache(param, fashionItemsInMemory);
+        int amountOfItems = cacheService.getAmountOfMatchedItemsForCache(param);
+        return new SearchResult(fashionItems, page, amountOfItems);
     }
 
     public int getAmountOfItems(){
         return getAll().size();
     }
 
-    public List<FashionItem> doSearch(String param, int limit) {
+    public SearchResult doSearch(String param, int page) {
+
+        String cacheName = param + ".page" + page;
 
         //Has cache?
-        if (cacheService.hasCache(param))
-            return cacheService.getCache(param, fashionItemsInMemory);
+        if (cacheService.hasCache(cacheName)){
+            getSearchResultForCache(cacheName, page);
+        }
+
+        //If search param too small
+        if (param.length() < 2){
+            return getAllSorted(page);
+        }
 
         //Get all items
         List<FashionItem> fashionItemList = getAll();
 
-        //If search param too small
-        if (param.length() < 2){
-            return  fashionItemList;
-        }
-
+        /*Do filter*/
         List<FashionItem> filteredItems = fashionItemList
                 .stream()
+                .filter(fashionItem -> fashionItem.match(param) > 0)
                 .sorted(Comparator.comparingInt(fashionItem -> fashionItem.match(param)))
                 .collect(Collectors.toList());
+
+        /*Reverse*/
         Collections.reverse(filteredItems);
 
+        /*Get amount of matched items*/
+        int matchedItems = filteredItems.size();
 
-        filteredItems = filteredItems.stream().limit(500).collect(Collectors.toList());
+        /*Filter for each*/
+        filteredItems = filteredItems.stream().skip(500L * page).limit(500).collect(Collectors.toList());
 
-        cacheService.cacheItems(amountOfItems, param, filteredItems);
+        /*Cache items*/
+        cacheService.cacheItems(amountOfItems, cacheName, filteredItems, matchedItems);
 
-        return filteredItems;
+        /*Build search result*/
+        return new SearchResult(filteredItems, page, matchedItems);
     }
 
-    public List<FashionItem> getAllForSellers(Set<String> sellersids) {
+    public List<FashionItem> getAllForSellers(Set<String> sellerIds) {
         List<FashionItem> fashionItemList = new ArrayList<>();
-        for (String id: sellersids) {
+        for (String id: sellerIds) {
             fashionItemList.addAll(itemRepository.findBySeller(id));
         }
         return fashionItemList;
