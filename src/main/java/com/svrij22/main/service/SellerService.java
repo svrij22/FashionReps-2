@@ -25,7 +25,12 @@ public class SellerService {
     }
 
     public List<Seller> getAll(){
-        return sellerRepository.findAll();
+        List<Seller> allSellers = sellerRepository.findAll()
+                .stream()
+                .sorted(Comparator.comparingInt(s -> s.itemsAmount)).collect(Collectors.toList());
+
+        Collections.reverse(allSellers);
+        return allSellers;
     }
 
     public List<Seller> addSeller(String name, String id) {
@@ -72,6 +77,13 @@ public class SellerService {
         seller.lastUpdated = LocalDateTime.now();
         System.out.println("Updated seller "+ seller.id);
         sellerRepository.save(seller);
+    }
+
+    public void updateSellerAmounts(){
+        sellerRepository.findAll().forEach(s -> {
+            s.itemsAmount = fashionItemService.getAllForSellers(Collections.singleton(s.id)).size();
+            sellerRepository.save(s);
+        });
     }
 
     public List<Seller> removeSeller(String id) {

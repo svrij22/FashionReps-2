@@ -36,7 +36,10 @@ public class FashionItem implements Serializable {
         for (String split : splitted) {
             score += result.contains(split) ? 1 : 0;
         }
-        return (int) Math.pow(getSold(), score);
+        if (score > 0){
+            score = (int) Math.pow(getSold(), score);
+        }
+        return score;
     }
 
 

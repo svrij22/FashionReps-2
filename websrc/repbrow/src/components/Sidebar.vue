@@ -35,10 +35,6 @@
           <button type="button" class="form-control" @click="addSeller">
             Add seller
           </button>
-          <button class="form-control"  @click="runUpdate">
-            <img src="~../assets/Spin-1s-200px.gif" class="spinner" v-if="isUpdating"/>
-            Update Seller
-          </button>
           <button class="form-control"  @click="runTranslate">
             Translations
           </button>

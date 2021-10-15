@@ -4,7 +4,6 @@
 
     <b-tabs class="tabs">
       <b-tab :title="page+1" v-for="page in Array(pages).keys()" :key="page" @click="() => loadItemsForPage(page)">
-
       </b-tab>
     </b-tabs>
 
@@ -25,9 +24,9 @@
       </div>
     </div>
 
-    <b-tabs pills card>
-      <b-tab title="Tab 1" active><b-card-text>Tab contents 1</b-card-text></b-tab>
-      <b-tab title="Tab 2"><b-card-text>Tab contents 2</b-card-text></b-tab>
+    <b-tabs class="tabs" pills card>
+      <b-tab :title="page+1" v-for="page in Array(pages).keys()" :key="page" @click="() => loadItemsForPage(page)">
+      </b-tab>
     </b-tabs>
   </div>
 </template>

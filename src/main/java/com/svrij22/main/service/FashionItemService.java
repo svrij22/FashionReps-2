@@ -16,7 +16,7 @@ public class FashionItemService {
     FashionItemRepository itemRepository;
     CacheService cacheService;
     int amountOfItems;
-    List<FashionItem> fashionItemsInMemory = new ArrayList<>();
+    public static List<FashionItem> fashionItemsInMemory = new ArrayList<>();
 
     public FashionItemService(FashionItemRepository itemRepository, CacheService cacheService) {
         this.itemRepository = itemRepository;
@@ -47,14 +47,14 @@ public class FashionItemService {
         String cacheName = "@@@all.page" + page;
 
         //Has cache?
-        if (cacheService.hasCache("@@@all")){
-            return getSearchResultForCache("@@@all", page);
+        if (cacheService.hasCache(cacheName)){
+            return getSearchResultForCache(cacheName, page);
         }
 
         //Find all and sort
         List<FashionItem> allItemsOrdered = getAll()
                 .stream()
-                .filter(fashionItem -> Double.parseDouble(fashionItem.price) > 2) //Price filter
+                .filter(fashionItem -> Double.parseDouble(fashionItem.price) > 12) //Price filter
                 .sorted(Comparator.comparingInt(FashionItem::getSold))
                 .collect(Collectors.toList());
 
@@ -75,9 +75,9 @@ public class FashionItemService {
     }
 
     public SearchResult getSearchResultForCache(String param, int page){
-        List<FashionItem> fashionItems = cacheService.getCache(param, fashionItemsInMemory);
-        int amountOfItems = cacheService.getAmountOfMatchedItemsForCache(param);
-        return new SearchResult(fashionItems, page, amountOfItems);
+        List<FashionItem> fashionItems = cacheService.getFashionItemsByCacheKey(param);
+        int matchedItems = cacheService.getAmountOfMatchedItemsForCache(param);
+        return new SearchResult(fashionItems, page, matchedItems);
     }
 
     public int getAmountOfItems(){

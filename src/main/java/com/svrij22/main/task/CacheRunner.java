@@ -25,15 +25,18 @@ public class CacheRunner {
     @EventListener(ApplicationReadyEvent.class)
     public void runAfterStartup() {
         System.out.println("Caching");
-        cacheService.refreshCache(fashionItemService.getAmountOfItems());
-        fashionItemService.getAllSorted(0);
-        fashionItemService.doSearch("air force", 0);
-        fashionItemService.doSearch("air force mid", 0);
-        fashionItemService.doSearch("air force high", 0);
-        fashionItemService.doSearch("adidas", 0);
-        fashionItemService.doSearch("nike", 0);
-        fashionItemService.doSearch("human made", 0);
-        fashionItemService.doSearch("fog", 0);
+        fashionItemService.getAmountOfItems();
+        //cacheService.getFiles();
+        //fashionItemService.getAllSorted(0);
+        //fashionItemService.doSearch("air force", 0);
+        //fashionItemService.doSearch("air force mid", 0);
+        //fashionItemService.doSearch("air force high", 0);
+        //fashionItemService.doSearch("adidas", 0);
+        //fashionItemService.doSearch("nike", 0);
+        //fashionItemService.doSearch("human made", 0);
+        //fashionItemService.doSearch("fog", 0);
+
+        sellerService.updateSellerAmounts();
     }
 
     @Scheduled(fixedDelay = 50000)
