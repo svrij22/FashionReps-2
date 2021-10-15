@@ -14,52 +14,73 @@ import java.util.stream.Collectors;
 @Service
 public class CacheService {
 
+    /*Memory cached items*/
     List<CachedItems> cachedItems = new ArrayList<>();
 
-    public void cacheItems(int amountOfItems, String cacheKey, List<FashionItem> items){
+    /*Save a cached item*/
+    public void cacheItems(int amountOfItems, String cacheKey, List<FashionItem> items, int matchedItems){
         System.out.println("Cached " + cacheKey);
 
         CachedItems cachedItem = new CachedItems(cacheKey,
                 amountOfItems,
-                items.stream().map(item -> item.position).collect(Collectors.toList()));
+                items.stream().map(item -> item.position).collect(Collectors.toList()),
+                matchedItems);
 
         cachedItems.add(cachedItem);
 
         saveFile(cachedItem);
     }
 
-    public List<FashionItem> getCache(String key, List<FashionItem> fashionItemsInMemory){
-        CachedItems cItem = cachedItems
+    /*Get a cached item*/
+    public CachedItems cacheItemFindByKey(String key){
+        return cachedItems
                 .stream()
                 .filter(c -> c.key.equals(key))
-                .findFirst()
-                .get();
+                .findAny()
+                .orElse(null);
+    }
 
-        return cItem.fashionItemList.stream().map(fashionItemsInMemory::get).collect(Collectors.toList());
+    /*Get cached item*/
+    public List<FashionItem> getFashionItemsByCacheKey(String key){
+        CachedItems cachedItems =  cacheItemFindByKey(key);
+        return cachedItems.fashionItemList
+                .stream()
+                .map(FashionItemService.fashionItemsInMemory::get)
+                .collect(Collectors.toList());
+    }
+
+    public int getAmountOfMatchedItemsForCache(String cacheName) {
+        return cacheItemFindByKey(cacheName).matchedItems;
     }
 
     public boolean hasCache(String key) {
-        return cachedItems
-                .stream()
-                .anyMatch(cachedItems1 -> cachedItems1.key.equals(key));
+        CachedItems cachedItem = cacheItemFindByKey(key);
+
+        if (cachedItem == null) return false;
+
+        if (cachedItem.version != FashionItemService.fashionItemsInMemory.size()){
+            cachedItems.remove(cachedItem);
+            return false;
+        }
+
+        return true;
     }
 
-    public void refreshCache(int amountOfItems){
-        try{
-            cachedItems = getFiles(amountOfItems);
-        }catch (Exception ignored) {}
-        System.out.println(String.format("Loaded %s items", cachedItems.size()));
-    }
+    public void getFiles() {
 
-    public List<CachedItems> getFiles(int version) throws IOException {
-
-        List<CachedItems> returnCache = new ArrayList<>();
         File dir = new File("tmp/");
         dir.mkdirs();
 
-        List<Path> allFiles = Files.list(Paths.get(dir.getAbsolutePath()))
-                .filter(Files::isRegularFile)
-                .collect(Collectors.toList());
+        List<Path> allFiles = null;
+        try {
+            allFiles = Files.list(Paths.get(dir.getAbsolutePath()))
+                    .filter(Files::isRegularFile)
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        assert allFiles != null;
 
         allFiles.forEach(path -> {
             try {
@@ -69,16 +90,16 @@ public class CacheService {
                 CachedItems cItem = (CachedItems) in.readObject();
                 in.close();
                 fileIn.close();
-                if (cItem.version != version){
+                if (cItem.version != FashionItemService.fashionItemsInMemory.size()){
                     Files.delete(path);
                 }else{
-                    returnCache.add(cItem);
+                    cachedItems.add(cItem);
                 }
             } catch (Exception e){
                 e.printStackTrace();};
         });
 
-        return returnCache;
+        System.out.println(String.format("Loaded %s items", cachedItems.size()));
     }
 
     public void saveFile(CachedItems cacheItem){

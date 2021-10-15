@@ -1,6 +1,6 @@
 <template>
   <div class="root">
-    <nav class="navbar navbar-light bg-light sticky-top position-sticky">
+    <nav class="navbar bd-navbar navbar-light bg-light sticky-top position-sticky">
       <div class="container">
         <button class="form-control form-control-sm" type="button" style="width: 50px" @click="toggleSellerSideBar">
           <img src="../assets/settings_icon_128522.png" style="width: 20px">
@@ -37,8 +37,6 @@ export default {
 </script>
 
 <style scoped>
-
-@import "~bootstrap/dist/css/bootstrap.min.css";
   .root{
     width: 100%;
     position: fixed;
@@ -56,6 +54,10 @@ export default {
     padding-left: 20px;
     padding-right: 20px;
     background-color: maroon!important;
+  }
+
+  .bd-navbar{
+    box-shadow: 0 0.25rem 0.25rem rgb(0 0 0 / 25%), inset 0 -1px 5px rgb(0 0 0 / 25%);
   }
 
   a{

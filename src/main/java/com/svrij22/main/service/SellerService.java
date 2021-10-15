@@ -15,17 +15,22 @@ import java.util.stream.Collectors;
 public class SellerService {
 
     SellerRepository sellerRepository;
-    CrawlerService crawlerService;
     FashionItemService fashionItemService;
+    FetchInjector fetchInjector;
 
-    public SellerService(SellerRepository sellerRepository, CrawlerService crawlerService, FashionItemService fashionItemService) {
+    public SellerService(SellerRepository sellerRepository, FashionItemService fashionItemService, FetchInjector fetchInjector) {
         this.sellerRepository = sellerRepository;
-        this.crawlerService = crawlerService;
         this.fashionItemService = fashionItemService;
+        this.fetchInjector = fetchInjector;
     }
 
     public List<Seller> getAll(){
-        return sellerRepository.findAll();
+        List<Seller> allSellers = sellerRepository.findAll()
+                .stream()
+                .sorted(Comparator.comparingInt(s -> s.itemsAmount)).collect(Collectors.toList());
+
+        Collections.reverse(allSellers);
+        return allSellers;
     }
 
     public List<Seller> addSeller(String name, String id) {
@@ -36,12 +41,10 @@ public class SellerService {
     public Seller getLastUpdatedSeller(){
         List<Seller> sellers = getAll();
 
-        List<Seller> nonIndexedSellers = sellers.stream().filter(seller -> {
-            return (seller.lastUpdated == null);
-        }).collect(Collectors.toList());
+        List<Seller> nonIndexedSellers = sellers.stream().filter(seller -> (seller.lastUpdated == null)).collect(Collectors.toList());
 
         if (nonIndexedSellers.size() > 0){
-            return nonIndexedSellers.stream().findFirst().get();
+            return nonIndexedSellers.stream().findAny().get();
         }
 
         AtomicReference<Seller> oldestIndexedSeller = null;
@@ -60,14 +63,8 @@ public class SellerService {
 
     public void updateOldestSeller(){
         Seller lastUpdated = getLastUpdatedSeller();
-        crawlerService.crawl(lastUpdated.id);
+        fetchInjector.fetch(lastUpdated.id);
         updateSingleSeller(lastUpdated.id);
-    }
-
-    public void updateSellers(String sellerid){
-        sellerRepository.findAll().forEach(seller -> {
-            updateSingleSeller(seller);
-        });
     }
 
     public void updateSingleSeller(String sellerid){
@@ -77,11 +74,16 @@ public class SellerService {
 
     public void updateSingleSeller(Seller seller){
         seller.itemsAmount = fashionItemService.getAllForSellers(Collections.singleton(seller.id)).size();
-        if (seller.itemsAmount > 0){
-            seller.lastUpdated = LocalDateTime.now();
-        }
+        seller.lastUpdated = LocalDateTime.now();
         System.out.println("Updated seller "+ seller.id);
         sellerRepository.save(seller);
+    }
+
+    public void updateSellerAmounts(){
+        sellerRepository.findAll().forEach(s -> {
+            s.itemsAmount = fashionItemService.getAllForSellers(Collections.singleton(s.id)).size();
+            sellerRepository.save(s);
+        });
     }
 
     public List<Seller> removeSeller(String id) {

@@ -1,8 +1,14 @@
 <template>
-  <sticky-header  v-on:searchq="(q) => this.doSearch(q)" v-on:toggleseller="toggleSellerSideBar"/>
-  <div class="content">
-    <sidebar v-show="sellerSideBar"/>
-    <item-container :data="displayedItems" :isloading="isLoading"/>
+  <div>
+    <sticky-header v-on:searchq="(q) => this.SetQuery(q)" v-on:toggleseller="toggleSellerSideBar"/>
+    <div class="content">
+      <sidebar v-show="sellerSideBar" v-if="!isLoading"/>
+      <item-container
+          :data="displayedItems"
+          :isloading="isLoading"
+          :pages="pages"
+          v-on:loaditems="(p) => this.SetPage(p)"/>
+    </div>
   </div>
 </template>
 
@@ -17,8 +23,10 @@ export default {
   components: {Sidebar, ItemContainer, StickyHeader},
   data() {
     return {
-      data: [],
+      fashionItems: [],
       page: 0,
+      query: "",
+      amountOfItems: 0,
       perpage: 50,
       sellerSideBar: true,
       isLoading: true
@@ -27,31 +35,35 @@ export default {
   computed: {
     displayedItems(){
       this.perpage;
-      this.data;
-      return _.take(this.data, this.perpage);
+      this.amountOfItems;
+      return _.take(this.fashionItems, this.perpage);
     },
+    pages(){
+      return Math.min(Math.ceil(this.amountOfItems / 500), 15)
+    }
   },
   methods: {
     toggleSellerSideBar(){
       this.sellerSideBar = !this.sellerSideBar
     },
-    doSearch(query) {
-      console.log(query)
-      fetch("http://localhost:8070/items/search?" + new URLSearchParams({
-        param: query,
+    SetQuery(q){
+      this.query = q;
+      this.page = 0;
+      this.doSearch();
+    },
+    SetPage(p){
+      this.page = p;
+      this.doSearch();
+    },
+    doSearch() {
+      fetch("http://localhost:8075/items/search?" + new URLSearchParams({
+        param: this.query,
+        page: this.page
       }))
           .then(response => response.json())
           .then(data => {
-            this.data = data
-            this.isLoading = false;
-          });
-    },
-    getAll() {
-      console.log("get")
-      fetch("http://localhost:8070/items")
-          .then(response => response.json())
-          .then(data => {
-            this.data = data
+            this.fashionItems = data.fashionItems;
+            this.amountOfItems = data.amountOfItems;
             this.isLoading = false;
           });
     },
@@ -72,7 +84,7 @@ export default {
   },
   mounted() {
     window.addEventListener('scroll', this.scrolling, {passive: true});
-    this.getAll();
+    this.doSearch("");
   }
 }
 </script>

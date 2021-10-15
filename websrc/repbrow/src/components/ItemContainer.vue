@@ -1,7 +1,14 @@
 <template>
   <div class="root" :style="containerStyle">
     <img src="~../assets/Spin-1s-200px.gif" class="spinner" v-if="isloading" style="width: 20px; margin-top: 100px"/>
-    <div class="item-container">
+
+    <b-tabs class="tabs">
+      <b-tab :title="page+1" v-for="page in Array(pages).keys()" :key="page" @click="() => loadItemsForPage(page)">
+      </b-tab>
+    </b-tabs>
+
+    <div class="item-container" v-if="!isloading">
+
       <div class="card item-card" v-for="item in displayData" :key="item.itemId" @click="() => openPage(item.itemId)">
 
         <div class="image-holder">
@@ -16,13 +23,18 @@
 
       </div>
     </div>
+
+    <b-tabs class="tabs" pills card>
+      <b-tab :title="page+1" v-for="page in Array(pages).keys()" :key="page" @click="() => loadItemsForPage(page)">
+      </b-tab>
+    </b-tabs>
   </div>
 </template>
 
 <script>
 export default {
   name: "ItemContainer",
-  props: ["data","containerstyle", "isloading"],
+  props: ["data","containerstyle", "isloading", "pages"],
   computed: {
     displayData(){
       return this.data;
@@ -37,25 +49,35 @@ export default {
     },
     openPage(itemid){
       window.open("https://weidian.com/item.html?itemID=" + itemid)
+    },
+    loadItemsForPage(pagenum){
+      this.$emit('loaditems', pagenum)
     }
   }
 }
 </script>
 
 <style scoped>
+
+  .tabs{
+    width: 100%;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
   .root{
     display: flex;
     align-items: center;
     flex-direction: column;
     align-content: center;
+    margin-top: 80px;
+    max-width: 1100px;
   }
 
   .item-container{
-    margin-top: 80px;
     display: grid;
     grid-template-columns: 25% 25% 25% 25%;
     width: 100%;
-    max-width: 1100px;
   }
 
   .item-card{

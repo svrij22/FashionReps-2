@@ -1,5 +1,5 @@
 <template>
-  <div v-show="!isCollapsed" class="root ">
+  <div v-show="!isCollapsed" class="root card">
     <div class="d-flex flex-column flex-shrink-0 p-3 bg-light sidebar">
       <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-dark text-decoration-none">
         <span class="fs-8 seller-list-span">Seller list</span>
@@ -20,7 +20,7 @@
                   <span class="btn-sm btn-u" @click="() => updateSeller(seller.id)" v-if="false">[update]</span>
                   <span class="btn-sm btn-u" @click="() => updateSellerInfo(seller.id)" v-if="false">[info-u]</span>
                 </div>
-                <div class="s-id"> {{seller.id}} - {{seller.lastUpdated?.split("T")[0]}} <span @click="() => removeSeller(seller.id)">[x]</span></div>
+                <div class="s-id"> {{seller.id}} - {{lastUpdatedDate(seller)}} </div>
                 <div class="items-amt">{{seller.itemsAmount}} Items</div>
               </div>
             </li>
@@ -34,10 +34,6 @@
           <input type="search" class="form-control" placeholder="Id"  v-model="newSeller.id">
           <button type="button" class="form-control" @click="addSeller">
             Add seller
-          </button>
-          <button class="form-control"  @click="runUpdate">
-            <img src="~../assets/Spin-1s-200px.gif" class="spinner" v-if="isUpdating"/>
-            Update Seller
           </button>
           <button class="form-control"  @click="runTranslate">
             Translations
@@ -59,7 +55,8 @@ export default {
       data: {},
       isCollapsed: false,
       isUpdating: false,
-      sellerSearch: ""
+      sellerSearch: "",
+      root: "http://localhost:8075"
     }
   },
   computed: {
@@ -71,8 +68,11 @@ export default {
     }
   },
   methods: {
+    lastUpdatedDate(seller){
+      return seller.lastUpdated?.split("T")[0]
+    },
     addSeller(){
-      fetch("http://localhost:8070/sellers/add?" + new URLSearchParams({
+      fetch(this.root + "/sellers/add?" + new URLSearchParams({
         name: this.newSeller.name,
         id: this.newSeller.id
       }))
@@ -80,12 +80,12 @@ export default {
           .then(data => this.data = data);
     },
     getSellers(){
-      fetch("http://localhost:8070/sellers")
+      fetch(this.root + "/sellers")
           .then(response => response.json())
           .then(data => this.data = data);
     },
     removeSeller(id){
-      fetch("http://localhost:8070/sellers/remove?" + new URLSearchParams({
+      fetch(this.root + "/sellers/remove?" + new URLSearchParams({
         id: id
       }))
           .then(response => response.json())
@@ -93,7 +93,7 @@ export default {
     },
     runUpdate(){
       this.isUpdating = true;
-      fetch("http://localhost:8070/sellers/update")
+      fetch(this.root + "/sellers/update")
           .then(response => response.json())
           .then(data => {
             this.data = data;
@@ -103,7 +103,7 @@ export default {
     },
     updateSeller(sellerid){
       this.isUpdating = true;
-      fetch("http://localhost:8070/crawler/update?sellerid=" + sellerid)
+      fetch(this.root + "/crawler/update?sellerid=" + sellerid)
           .then(response => response.json())
           .then(data => {
             this.data = data;
@@ -113,7 +113,7 @@ export default {
     },
     updateSellerInfo(sellerid){
       this.isUpdating = true;
-      fetch("http://localhost:8070/crawler/info?sellerid=" + sellerid)
+      fetch(this.root + "/crawler/info?sellerid=" + sellerid)
           .then(response => response.json())
           .then(data => {
             this.data = data;
@@ -122,7 +122,7 @@ export default {
           });
     },
     runTranslate(){
-      fetch("http://localhost:8070/items/translate")
+      fetch(this.root + "/items/translate")
     }
   },
   mounted() {
@@ -147,7 +147,8 @@ export default {
     width: 230px;
     height: 2000px;
     margin-top: 90px;
-    border: 4px solid gray;
+
+    box-shadow: 0 0.25rem 0.25rem rgb(0 0 0 / 25%), inset 0 -1px 5px rgb(0 0 0 / 25%);
   }
 
   .nav-item{
